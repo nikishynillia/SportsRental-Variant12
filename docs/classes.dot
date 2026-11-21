@@ -1,0 +1,25 @@
+digraph model {
+  graph [rankdir=LR, bgcolor="white", pad="0.25", nodesep="0.48", ranksep="0.85", splines=polyline, fontname="Liberation Serif", fontsize=18, label="Варіант 12 — класи та зв’язки прототипу", labelloc=t];
+  node [shape=record, fontname="DejaVu Sans", fontsize=12, margin="0.13,0.10", penwidth=1.3, color="black", fillcolor="white"];
+  edge [color="black", arrowsize=0.75, penwidth=1.1, fontname="DejaVu Sans", fontsize=10];
+  Client [label="{Client|+Id: int\l+FullName: string\l+Phone: string\l+Email: string?\l|+Update()\l+TryCreate()\l}"];
+  Inventory [label="{InventoryItem|+Id: int\l+Type: EquipmentType\l+Status: EquipmentStatus\l|+Issue()\l+Return()\l}"];
+  Rental [label="{Rental|+Id: int\l+ClientId: int\l+InventoryId: int\l+Status: RentalStatus\l+Cost: decimal\l|+Finish()\l}"];
+  Tariff [label="{Tariff|+Type: EquipmentType\l+HourlyRate: decimal\l+WeekendMultiplier\l+LongRentalMultiplier\l}"];
+  Base [label="{RentalItem (abstract)|+InventoryId: int\l+StartsOnWeekend: bool\l|+CalculateRent(hours): decimal\l+GetDescription(): string\l}"];
+  Bike [label="{Bike|+CalculateRent()\l+GetDescription() override\l}"];
+  Skis [label="{Skis|+CalculateRent()\l}"];
+  Tent [label="{Tent|+Capacity: int\l+CalculateRent()\l+GetDescription() new\l}"];
+  Repo [label="{IRepository\<T\>|+Add() +Find()\l+GetAll() +Update() +Remove()\l}"];
+  Json [label="{JsonRepository\<T\>|+Load JSON\l+Persist JSON\l}"];
+  Service [label="{RentalService|+Quote()\l+Issue()\l+Return()\l}"];
+  Client -> Rental [label="1:N", style=dotted, arrowhead=vee];
+  Inventory -> Rental [label="1:N", style=dotted, arrowhead=vee];
+  Tariff -> Base [label="конфігурація", style=dashed, arrowhead=vee];
+  Bike -> Base [arrowhead=empty];
+  Skis -> Base [arrowhead=empty];
+  Tent -> Base [arrowhead=empty];
+  Json -> Repo [arrowhead=empty];
+  Service -> Repo [style=dashed, arrowhead=vee];
+  Service -> Base [style=dashed, arrowhead=vee];
+}

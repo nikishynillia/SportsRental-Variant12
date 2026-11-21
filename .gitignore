@@ -6,3 +6,5 @@
 # Реальні записи містять персональні дані; у git зберігаємо лише порожні приклади
 /data/*.json
 !/data/example-*.json
+/docs/render/
+/docs/guide_render/
