@@ -86,6 +86,36 @@ public static class SelfTest
                 RentalItem baseItem = tent;
                 return tent.GetDescription().Contains("місць: 6") && !baseItem.GetDescription().Contains("місць: 6");
             });
+            // Курсовий проєкт: повний прикладний CRUD третьої сутності Rental (D3).
+            // Окремий контекст не змінює результати попередніх тестів T01–T40.
+            var crud = new ApplicationContext(Path.Combine(folder, "rental-crud-tests"));
+            DateTime activeStart = new(2026, 11, 23, 10, 0, 0);
+            crud.ClientService.Register(101, "Тестовий клієнт", "+380671234567");
+            crud.InventoryService.Add(101, "Тестовий велосипед", EquipmentType.Bike);
+            Check("T41", "D3 CRUD: створити прокат", () =>
+                crud.RentalService.Issue(101, 101, 101, activeStart, 12).Status == RentalStatus.Active);
+            Check("T42", "D3 CRUD: знайти і переглянути", () =>
+                crud.RentalService.Find(101)?.Hours == 12 && crud.RentalService.All().Count == 1);
+            Check("T43", "D3 CRUD: виправити активний", () =>
+            {
+                Rental edited = crud.RentalService.EditActive(101, activeStart, 24);
+                return edited.Hours == 24 && edited.Cost == 960m && crud.InventoryService.Find(101)?.Status == EquipmentStatus.Rented;
+            });
+            Check("T44", "D3 CRUD: заборона тривалості 0 год", () =>
+                Throws<ArgumentOutOfRangeException>(() => crud.RentalService.EditActive(101, activeStart, 0)) &&
+                crud.RentalService.Find(101)?.Hours == 24);
+            Check("T45", "D3 CRUD: скасувати активний", () =>
+                crud.RentalService.CancelActive(101) && crud.RentalService.Find(101) is null &&
+                crud.InventoryService.Find(101)?.Status == EquipmentStatus.Available);
+            Check("T46", "D3 CRUD: немає запису для скасування", () => !crud.RentalService.CancelActive(101));
+            crud.RentalService.Issue(102, 101, 101, activeStart, 12);
+            crud.RentalService.Return(102, activeStart.AddHours(12));
+            Check("T47", "D3 CRUD: зберегти історію повернень", () =>
+                Throws<InvalidOperationException>(() => crud.RentalService.CancelActive(102)) &&
+                crud.RentalService.Find(102)?.Status == RentalStatus.Returned);
+            Check("T48", "D3 CRUD: не редагувати завершений; JSON", () =>
+                Throws<InvalidOperationException>(() => crud.RentalService.EditActive(102, activeStart, 24)) &&
+                new ApplicationContext(Path.Combine(folder, "rental-crud-tests")).RentalService.Find(102)?.Hours == 12);
         }
         catch (Exception e) { failed++; output.Add("SETUP | Неочікувана помилка: " + e.Message); }
         finally

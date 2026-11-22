@@ -145,6 +145,40 @@ public sealed class RentalService
         item.Return(needsMaintenance); _inventory.Update(item);
         return rental;
     }
+    /// <summary>Редагування тільки активного прокату: нова ціна обчислюється за поточним тарифом.</summary>
+    public Rental EditActive(int id, DateTime newStart, int newHours)
+    {
+        Rental rental = _rentals.Find(id) ?? throw new KeyNotFoundException("Прокат не знайдено.");
+        if (rental.Status != RentalStatus.Active)
+            throw new InvalidOperationException("Завершений прокат не можна змінити.");
+        InventoryItem item = _inventory.Find(rental.InventoryId) ?? throw new KeyNotFoundException("Інвентар не знайдено.");
+        if (item.Status != EquipmentStatus.Rented)
+            throw new InvalidOperationException("Некоректний стан інвентарю.");
+        if (newStart.Year is < 2000 or > 2100)
+            throw new ArgumentOutOfRangeException(nameof(newStart));
+        decimal price = Quote(item.Id, newStart, newHours);
+        rental.CorrectActive(newStart, newHours, price);
+        _rentals.Update(rental);
+        return rental;
+    }
+
+    /// <summary>Скасування помилково відкритого прокату; завершені записи залишаються в історії.</summary>
+    public bool CancelActive(int id)
+    {
+        Rental? rental = _rentals.Find(id);
+        if (rental is null) return false;
+        if (rental.Status != RentalStatus.Active)
+            throw new InvalidOperationException("Завершений прокат не можна видалити з історії.");
+        InventoryItem item = _inventory.Find(rental.InventoryId) ?? throw new KeyNotFoundException("Інвентар не знайдено.");
+        if (item.Status != EquipmentStatus.Rented)
+            throw new InvalidOperationException("Некоректний стан інвентарю.");
+        bool removed = _rentals.Remove(id);
+        if (!removed) return false;
+        item.Return(needsMaintenance: false);
+        _inventory.Update(item);
+        return true;
+    }
+
     public Rental? Find(int id) => _rentals.Find(id);
     public IReadOnlyList<Rental> All() => _rentals.GetAll();
 }

@@ -49,6 +49,7 @@ internal static class Program
             System.Console.WriteLine("7. Поліморфізм класів (ПР9)");
             System.Console.WriteLine("8. Табуляція вартості (ПР7)");
             System.Console.WriteLine("9. Масиви і рекурсія (ПР8)");
+            System.Console.WriteLine("10. Керування прокатами (CRUD D3)");
             System.Console.WriteLine("0. Вихід");
             choice = ConsoleInput.ReadInt("Ваш вибір", 0, 99);
             try
@@ -64,6 +65,7 @@ internal static class Program
                     case 7: Polymorphism(); break;
                     case 8: PriceTable(); break;
                     case 9: Analytics(); break;
+                    case 10: RentalMenu(); break;
                     case 0: System.Console.WriteLine("Завершення роботи."); break;
                     default: System.Console.WriteLine("Немає такого пункту меню."); break;
                 }
@@ -125,6 +127,37 @@ internal static class Program
         int id = ConsoleInput.ReadInt("ID прокату", 1, 1000000);
         bool needRepair = ConsoleInput.ReadYesNo("Потрібне обслуговування? ");
         System.Console.WriteLine("Повернення: " + _app.RentalService.Return(id, DateTime.Now, needRepair));
+    }
+
+    private static void RentalMenu()
+    {
+        System.Console.WriteLine("\n1 Створити | 2 Знайти | 3 Перелік | 4 Виправити активний | 5 Скасувати активний | 0 Назад");
+        int ch = ConsoleInput.ReadInt("Операція", 0, 5);
+        if (ch == 0) return;
+        if (ch == 1) { Issue(); return; }
+        if (ch == 3)
+        {
+            foreach (var rental in _app.RentalService.All()) System.Console.WriteLine(rental);
+            return;
+        }
+        int id = ConsoleInput.ReadInt("ID прокату", 1, 1000000);
+        if (ch == 2)
+        {
+            System.Console.WriteLine(_app.RentalService.Find(id)?.ToString() ?? "Не знайдено.");
+            return;
+        }
+        if (ch == 4)
+        {
+            int hours = ConsoleInput.ReadInt("Виправлена тривалість у годинах", 1, 336);
+            DateTime newStart = ConsoleInput.ReadDateTime("Виправлені дата і час видачі");
+            System.Console.WriteLine("Оновлено: " + _app.RentalService.EditActive(id, newStart, hours));
+            return;
+        }
+        Rental? original = _app.RentalService.Find(id);
+        if (original is null) { System.Console.WriteLine("Не знайдено."); return; }
+        System.Console.WriteLine("Скасування видаляє лише помилковий АКТИВНИЙ прокат; завершені записи захищено.");
+        if (!ConsoleInput.ReadYesNo("Підтвердити скасування?")) return;
+        System.Console.WriteLine(_app.RentalService.CancelActive(id) ? "Скасовано. Інвентар знову доступний." : "Не знайдено.");
     }
 
     private static void Reports()

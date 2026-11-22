@@ -118,11 +118,11 @@ public sealed class Rental : IEntity
     public int Id { get; }
     public int ClientId { get; }
     public int InventoryId { get; }
-    public DateTime StartedAt { get; }
-    public int Hours { get; }
+    public DateTime StartedAt { get; private set; }
+    public int Hours { get; private set; }
     public DateTime PlannedReturnAt => StartedAt.AddHours(Hours);
     public DateTime? ReturnedAt { get; private set; }
-    public decimal Cost { get; }
+    public decimal Cost { get; private set; }
     public RentalStatus Status { get; private set; }
 
     public Rental(int id, int clientId, int inventoryId, DateTime startedAt, int hours, decimal cost)
@@ -141,6 +141,22 @@ public sealed class Rental : IEntity
         Id = id; ClientId = clientId; InventoryId = inventoryId; StartedAt = startedAt;
         Hours = hours; Cost = cost; Status = status; ReturnedAt = returnedAt;
     }
+    /// <summary>Виправляє помилкові реквізити активного прокату. Завершені записи незмінні.</summary>
+    public void CorrectActive(DateTime startedAt, int hours, decimal cost)
+    {
+        if (Status != RentalStatus.Active)
+            throw new InvalidOperationException("Завершений прокат не можна змінити.");
+        if (startedAt.Year is < 2000 or > 2100)
+            throw new ArgumentOutOfRangeException(nameof(startedAt));
+        if (hours is < 1 or > 336)
+            throw new ArgumentOutOfRangeException(nameof(hours));
+        if (cost < 0m)
+            throw new ArgumentOutOfRangeException(nameof(cost));
+        StartedAt = startedAt;
+        Hours = hours;
+        Cost = cost;
+    }
+
     /// <summary>Завершує активний прокат, забороняючи повторне повернення.</summary>
     public void Finish(DateTime returnedAt)
     {
